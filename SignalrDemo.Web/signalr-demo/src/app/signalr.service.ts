@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { BehaviorSubject } from 'rxjs';
 import * as signalR from '@microsoft/signalr';
+import { LogLevel } from '@microsoft/signalr';
 
 @Injectable({
   providedIn: 'root',
@@ -14,16 +15,19 @@ export class SignalrService {
 
   constructor() {
     this.connection = null;
-    this.hubHelloMessage = new BehaviorSubject<string>("");
+    this.hubHelloMessage = new BehaviorSubject<string>('');
     this.progressPercentage = new BehaviorSubject<number>(0);
-    this.progressMessage = new BehaviorSubject<string>("");
+    this.progressMessage = new BehaviorSubject<string>('');
   }
 
   // Establish a connection to the SignalR server hub
   public initiateSignalrConnection(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.connection = new signalR.HubConnectionBuilder()
-        .withUrl(environment.signalrHubUrl)
+        .withUrl(environment.signalrHubUrl, {
+          withCredentials: true, // Required for CORS with credentials
+        })
+        .configureLogging(LogLevel.Information)
         .build();
 
       this.setSignalrClientMethods();
@@ -31,7 +35,9 @@ export class SignalrService {
       this.connection
         .start()
         .then(() => {
-          console.log(`SignalR connection success! connectionId: ${this.connection.connectionId}`);
+          console.log(
+            `SignalR connection success! connectionId: ${this.connection.connectionId}`
+          );
           resolve();
         })
         .catch((error: any) => {
